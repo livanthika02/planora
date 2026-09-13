@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planora — Task Manager</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#FBF2F0;
+    --panel:#FFFFFF;
+    --ink:#2B1B22;
+    --muted:#8C6B72;
+    --border:#F1DCE0;
+    --brand:#C2185B;
+    --brand-dark:#821143;
+    --brand-tint:#FBE4EC;
+    --accent:#E5533D;
+    --accent-dark:#C43F2B;
+    --accent-tint:#FCE3DC;
+    --red:#C62828;
+    --red-tint:#FBDADA;
+    --rose:#B76E79;
+    --rose-tint:#F5E3E6;
+    --plum:#7C4A5D;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(43,27,34,0.06), 0 6px 20px rgba(43,27,34,0.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.serif{font-family:'Source Serif 4', Georgia, serif;}
+  button{font-family:inherit;}
+  ::selection{background:var(--brand-tint);}
+
+  /* ---------- Auth screen ---------- */
+  #auth-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .auth-card{
+    width:100%;
+    max-width:380px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:36px 32px;
+    box-shadow:var(--shadow);
+  }
+  .auth-mark{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .auth-mark .dot{
+    width:11px;height:11px;border-radius:50%;
+    background:var(--brand);
+    flex-shrink:0;
+  }
+  .auth-mark span{font-size:20px;font-weight:600;letter-spacing:-0.01em;}
+  .auth-card h1{font-size:26px;margin:0 0 6px;line-height:1.25;}
+  .auth-card p.sub{color:var(--muted);font-size:14px;margin:0 0 26px;line-height:1.5;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input{
+    width:100%;
+    padding:11px 13px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font-size:14px;
+    background:#FFFCFC;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .15s;
+  }
+  .field input:focus{border-color:var(--brand);}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border:none;
+    border-radius:8px;
+    padding:11px 18px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .15s, transform .05s;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:0.6;cursor:not-allowed;}
+  .btn-primary{background:var(--brand);color:#fff;width:100%;}
+  .btn-primary:hover{background:var(--brand-dark);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);width:100%;margin-top:10px;}
+  .btn-ghost:hover{background:#FBEFF1;}
+  .auth-error{
+    color:var(--red);
+    font-size:13px;
+    margin:-6px 0 14px;
+    min-height:16px;
+  }
+  .auth-switch{
+    text-align:center;
+    margin-top:22px;
+    font-size:13px;
+    color:var(--muted);
+  }
+  .auth-switch a{color:var(--brand);text-decoration:none;font-weight:600;cursor:pointer;}
+  .auth-switch a:hover{text-decoration:underline;}
+
+  /* ---------- App shell ---------- */
+  #app-screen{display:none;min-height:100vh;}
+  .shell{
+    display:grid;
+    grid-template-columns:236px 1fr;
+    min-height:100vh;
+  }
+  .sidebar{
+    background:var(--brand-dark);
+    color:#FBE4EC;
+    padding:26px 20px;
+    display:flex;
+    flex-direction:column;
+  }
+  .sidebar .mark{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:34px;
+  }
+  .sidebar .mark .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+  .sidebar .mark span{font-size:19px;font-weight:600;color:#fff;}
+  .sidebar nav{display:flex;flex-direction:column;gap:4px;margin-bottom:auto;}
+  .navlink{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;
+    border-radius:8px;
+    color:#F1C4D5;
+    font-size:14px;
+    cursor:pointer;
+    border:none;
+    background:transparent;
+    text-align:left;
+    width:100%;
+  }
+  .navlink:hover{background:rgba(255,255,255,0.08);}
+  .navlink.active{background:rgba(255,255,255,0.14);color:#fff;font-weight:600;}
+  .sidebar-stats{
+    border-top:1px solid rgba(255,255,255,0.16);
+    padding-top:16px;
+    margin-top:16px;
+    font-size:12px;
+    color:#E6A9C0;
+    line-height:1.9;
+  }
+  .sidebar-stats b{color:#fff;font-weight:600;}
+  .sidebar-user{
+    border-top:1px solid rgba(255,255,255,0.16);
+    padding-top:16px;
+    margin-top:16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:13px;
+  }
+  .sidebar-user .who{color:#FBE4EC;font-weight:600;}
+  .sidebar-user button{
+    background:transparent;border:none;color:#E6A9C0;
+    font-size:12px;cursor:pointer;text-decoration:underline;
+    padding:0;
+  }
+  .sidebar-user button:hover{color:#fff;}
+  .conn-status{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;color:#E6A9C0;
+    margin-top:10px;
+  }
+  .conn-dot{width:7px;height:7px;border-radius:50%;background:#E6A9C0;}
+  .conn-dot.online{background:#7ED9A0;}
+
+  .main{padding:24px 34px 60px;}
+
+  .controls{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--muted);
+    font-size:13px;
+    padding:6px 13px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .chip:hover{border-color:var(--brand);}
+  .chip.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600;}
+  .spacer{flex:1;}
+  .search-box{
+    position:relative;
+    width:220px;
+    flex-shrink:0;
+  }
+  .search-box input{
+    width:100%;
+    padding:9px 13px 9px 34px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel);
+    font-size:14px;
+    outline:none;
+  }
+  .search-box input:focus{border-color:var(--brand);}
+  .search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);}
+  .btn-add{background:var(--brand);color:#fff;padding:10px 18px;flex-shrink:0;}
+  .btn-add:hover{background:var(--brand-dark);}
+
+  /* board */
+  .board{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+    align-items:start;
+  }
+  .column{background:transparent;}
+  .column-head{
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:12px;padding:0 2px;
+  }
+  .column-head .swatch{width:9px;height:9px;border-radius:2px;}
+  .column-head h2{font-size:15px;margin:0;font-weight:600;color:var(--ink);}
+  .column-head .count{
+    margin-left:auto;color:var(--muted);font-size:12px;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:999px;padding:1px 9px;
+  }
+  .card-stack{display:flex;flex-direction:column;gap:10px;min-height:40px;}
+  .task-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--border);
+    border-radius:8px;
+    padding:14px 15px;
+    box-shadow:var(--shadow);
+  }
+  .task-card.p-high{border-left-color:var(--red);}
+  .task-card.p-medium{border-left-color:var(--accent);}
+  .task-card.p-low{border-left-color:var(--rose);}
+  .task-card h3{
+    font-size:14.5px;margin:0 0 9px;font-weight:600;
+    line-height:1.35;font-family:'Inter',sans-serif;
+  }
+  .task-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;}
+  .tag.high{background:var(--red-tint);color:var(--red);}
+  .tag.medium{background:var(--accent-tint);color:var(--accent-dark);}
+  .tag.low{background:var(--rose-tint);color:var(--rose);}
+  .tag.due{background:#F3E9EA;color:var(--muted);font-weight:500;}
+  .tag.overdue{background:var(--red-tint);color:var(--red);font-weight:600;}
+  .tag.category{background:#EFE7F0;color:#6B4D74;font-weight:500;}
+  .card-actions{
+    display:flex;align-items:center;gap:6px;
+    border-top:1px solid var(--border);padding-top:10px;
+  }
+  .card-actions select{
+    font-size:12px;border:1px solid var(--border);border-radius:6px;
+    padding:4px 6px;background:#FFFCFC;color:var(--ink);flex:1;
+  }
+  .icon-btn{
+    background:transparent;border:none;color:var(--muted);cursor:pointer;
+    padding:4px 6px;border-radius:6px;display:flex;align-items:center;
+  }
+  .icon-btn:hover{background:#F3E9EA;color:var(--ink);}
+  .icon-btn.danger:hover{color:var(--red);background:var(--red-tint);}
+  .empty-col{
+    border:1.5px dashed var(--border);border-radius:8px;
+    padding:22px 12px;text-align:center;color:var(--muted);font-size:13px;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(43,27,34,0.45);
+    display:none;align-items:center;justify-content:center;padding:20px;z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--panel);border-radius:12px;width:100%;max-width:420px;
+    padding:26px 26px 22px;box-shadow:0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal h2{font-size:19px;margin:0 0 18px;}
+  .field select{
+    width:100%;padding:10px 12px;border:1px solid var(--border);
+    border-radius:8px;font-size:14px;background:#FFFCFC;outline:none;
+  }
+  .field-row{display:flex;gap:12px;}
+  .field-row .field{flex:1;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions .btn{flex:1;}
+  .btn-secondary{background:#F3E9EA;color:var(--ink);}
+  .btn-secondary:hover{background:#EBD9DC;}
+
+  /* toast */
+  #toast{
+    position:fixed;bottom:22px;left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:#fff;padding:11px 20px;border-radius:8px;
+    font-size:13.5px;box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    opacity:0;transition:opacity .2s, transform .2s;pointer-events:none;z-index:100;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width: 900px){
+    .shell{grid-template-columns:1fr;}
+    .sidebar{flex-direction:row;align-items:center;padding:14px 18px;gap:16px;}
+    .sidebar .mark{margin-bottom:0;}
+    .sidebar nav{flex-direction:row;margin-bottom:0;flex:1;overflow-x:auto;}
+    .sidebar-stats,.sidebar-user,.conn-status{display:none;}
+    .main{padding:20px 18px 50px;}
+    .board{grid-template-columns:1fr;}
+    .search-box{width:100%;order:3;}
+    .btn-add{order:4;}
+  }
+  @media (max-width:520px){
+    .field-row{flex-direction:column;gap:0;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH SCREEN ================= -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-mark"><div class="dot"></div><span>Planora</span></div>
+    <h1 id="auth-title">Sign in to your board</h1>
+    <p class="sub" id="auth-sub">Track your work across to-do, in progress, and done.</p>
+    <div class="field" id="name-field" style="display:none;">
+      <label for="auth-name">Name</label>
+      <input id="auth-name" type="text" placeholder="Jordan Blake" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="auth-email">Email</label>
+      <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="auth-password">Password</label>
+      <input id="auth-password" type="password" placeholder="At least 4 characters" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <button class="btn btn-primary" id="auth-submit">Sign in</button>
+    <div class="auth-switch" id="auth-switch">New here? <a id="auth-toggle">Create an account</a></div>
+  </div>
+</div>
+
+<!-- ================= APP SCREEN ================= -->
+<div id="app-screen">
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="mark"><div class="dot"></div><span>Planora</span></div>
+      <nav>
+        <button class="navlink active" data-filter="all">Board</button>
+        <button class="navlink" data-filter="todo">To do</button>
+        <button class="navlink" data-filter="in-progress">In progress</button>
+        <button class="navlink" data-filter="done">Done</button>
+        <button class="navlink" data-filter="overdue">Overdue</button>
+      </nav>
+      <div class="sidebar-stats" id="sidebar-stats"></div>
+      <div class="conn-status"><div class="conn-dot" id="conn-dot"></div><span id="conn-text">Connecting…</span></div>
+      <div class="sidebar-user">
+        <span class="who" id="who"></span>
+        <button id="signout">Sign out</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="controls">
+        <div class="chip-row" id="priority-chips">
+          <button class="chip active" data-priority="all">All priorities</button>
+          <button class="chip" data-priority="high">High</button>
+          <button class="chip" data-priority="medium">Medium</button>
+          <button class="chip" data-priority="low">Low</button>
+        </div>
+        <div class="chip-row" id="category-chips">
+          <button class="chip active" data-category="all">All categories</button>
+          <button class="chip" data-category="work">Work</button>
+          <button class="chip" data-category="study">Study</button>
+          <button class="chip" data-category="general">General</button>
+        </div>
+        <div class="spacer"></div>
+        <div class="search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search" type="text" placeholder="Search tasks…">
+        </div>
+        <button class="btn btn-add" id="new-task-btn">+ New task</button>
+      </div>
+
+      <div class="board" id="board"></div>
+    </main>
+  </div>
+</div>
+
+<!-- ================= TASK MODAL ================= -->
+<div class="overlay" id="task-overlay">
+  <div class="modal">
+    <h2 id="modal-title">New task</h2>
+    <div class="field">
+      <label for="task-title">Title</label>
+      <input id="task-title" type="text" placeholder="e.g. Draft onboarding email">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="task-category">This task is for</label>
+        <select id="task-category">
+          <option value="work" selected>Work</option>
+          <option value="study">Study</option>
+          <option value="general">General</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="task-priority">Priority</label>
+        <select id="task-priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="task-status">Status</label>
+        <select id="task-status">
+          <option value="todo" selected>To do</option>
+          <option value="in-progress">In progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="task-due">Due date (optional)</label>
+        <input id="task-due" type="date">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="task-cancel">Cancel</button>
+      <button class="btn btn-primary" id="task-save">Save task</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- State ----------------
+  let tasks = [];
+  let editingTaskId = null;
+  let statusFilter = "all";
+  let priorityFilter = "all";
+  let categoryFilter = "all";
+  let searchTerm = "";
+  let authMode = "signin";
+  let socket = null;
+
+  const STATUSES = [
+    {key:"todo", label:"To do", swatch:"#8C6B72"},
+    {key:"in-progress", label:"In progress", swatch:"#E5533D"},
+    {key:"done", label:"Done", swatch:"#7C4A5D"}
+  ];
+  const CATEGORY_LABEL = {work:"Work", study:"Study", general:"General"};
+
+  // ---------------- API helper ----------------
+  async function api(path, options){
+    options = options || {};
+    const headers = Object.assign({"Content-Type":"application/json"}, options.headers || {});
+    const token = localStorage.getItem("planora_token");
+    if(token) headers["Authorization"] = "Bearer " + token;
+    const res = await fetch(path, Object.assign({}, options, {headers}));
+    let data = null;
+    try{ data = await res.json(); }catch(e){ /* no body */ }
+    if(!res.ok){
+      throw new Error((data && data.error) || "Something went wrong.");
+    }
+    return data;
+  }
+
+  // ---------------- Toast ----------------
+  let toastTimer = null;
+  function toast(msg){
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>el.classList.remove("show"), 2200);
+  }
+
+  // ---------------- Auth screen ----------------
+  const authTitle = document.getElementById("auth-title");
+  const authSub = document.getElementById("auth-sub");
+  const nameField = document.getElementById("name-field");
+  const authSwitchText = document.getElementById("auth-switch");
+  const authSubmit = document.getElementById("auth-submit");
+  const authError = document.getElementById("auth-error");
+
+  function renderAuthMode(){
+    if(authMode === "signin"){
+      authTitle.textContent = "Sign in to your board";
+      authSub.textContent = "Track your work across to-do, in progress, and done.";
+      nameField.style.display = "none";
+      authSubmit.textContent = "Sign in";
+      authSwitchText.innerHTML = 'New here? <a id="auth-toggle">Create an account</a>';
+    } else {
+      authTitle.textContent = "Create your account";
+      authSub.textContent = "One board, backed by a real database.";
+      nameField.style.display = "block";
+      authSubmit.textContent = "Create account";
+      authSwitchText.innerHTML = 'Already have an account? <a id="auth-toggle">Sign in</a>';
+    }
+    document.getElementById("auth-toggle").addEventListener("click", ()=>{
+      authMode = authMode === "signin" ? "signup" : "signin";
+      authError.textContent = "";
+      renderAuthMode();
+    });
+  }
+  renderAuthMode();
+
+  authSubmit.addEventListener("click", async ()=>{
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    const name = document.getElementById("auth-name").value.trim();
+    authError.textContent = "";
+
+    if(!email || !password){
+      authError.textContent = "Enter an email and password.";
+      return;
+    }
+
+    authSubmit.disabled = true;
+    authSubmit.textContent = "Please wait…";
+    try{
+      const endpoint = authMode === "signup" ? "/api/auth/signup" : "/api/auth/login";
+      const data = await api(endpoint, {
+        method: "POST",
+        body: JSON.stringify({email, password, name})
+      });
+      localStorage.setItem("planora_token", data.token);
+      localStorage.setItem("planora_user_id", data.userId);
+      localStorage.setItem("planora_user_name", data.name);
+      await enterApp();
+    }catch(err){
+      authError.textContent = err.message;
+    }finally{
+      authSubmit.disabled = false;
+      renderAuthMode();
+    }
+  });
+
+  async function enterApp(){
+    const name = localStorage.getItem("planora_user_name") || "there";
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "block";
+    document.getElementById("who").textContent = name;
+
+    try{
+      tasks = await api("/api/tasks");
+    }catch(err){
+      // Token invalid/expired — send back to sign-in
+      localStorage.removeItem("planora_token");
+      document.getElementById("app-screen").style.display = "none";
+      document.getElementById("auth-screen").style.display = "flex";
+      authError.textContent = "Your session expired. Please sign in again.";
+      return;
+    }
+    connectSocket();
+    renderBoard();
+    toast("Signed in as " + name);
+  }
+
+  document.getElementById("signout").addEventListener("click", ()=>{
+    localStorage.removeItem("planora_token");
+    localStorage.removeItem("planora_user_id");
+    localStorage.removeItem("planora_user_name");
+    if(socket) socket.disconnect();
+    tasks = [];
+    document.getElementById("app-screen").style.display = "none";
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("auth-email").value = "";
+    document.getElementById("auth-password").value = "";
+  });
+
+  // ---------------- Real-time sync ----------------
+  function connectSocket(){
+    socket = io();
+    const dot = document.getElementById("conn-dot");
+    const text = document.getElementById("conn-text");
+
+    socket.on("connect", ()=>{
+      socket.emit("join", localStorage.getItem("planora_user_id"));
+      dot.classList.add("online");
+      text.textContent = "Live sync on";
+    });
+    socket.on("disconnect", ()=>{
+      dot.classList.remove("online");
+      text.textContent = "Reconnecting…";
+    });
+    socket.on("task:created", (task)=>{
+      if(!tasks.some(t=>t.id===task.id)){ tasks.unshift(task); renderBoard(); }
+    });
+    socket.on("task:updated", (task)=>{
+      const idx = tasks.findIndex(t=>t.id===task.id);
+      if(idx > -1){ tasks[idx] = task; renderBoard(); }
+    });
+    socket.on("task:deleted", ({id})=>{
+      tasks = tasks.filter(t=>t.id!==id);
+      renderBoard();
+    });
+  }
+
+  // ---------------- Auto sign-in on reload ----------------
+  window.addEventListener("DOMContentLoaded", ()=>{
+    if(localStorage.getItem("planora_token")){
+      enterApp();
+    }
+  });
+
+  // ---------------- Board rendering ----------------
+  const board = document.getElementById("board");
+  const sidebarStats = document.getElementById("sidebar-stats");
+
+  document.querySelectorAll(".navlink").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".navlink").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      statusFilter = btn.dataset.filter;
+      renderBoard();
+    });
+  });
+  document.querySelectorAll("#priority-chips .chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      document.querySelectorAll("#priority-chips .chip").forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      priorityFilter = chip.dataset.priority;
+      renderBoard();
+    });
+  });
+  document.querySelectorAll("#category-chips .chip").forEach(chip=>{
+    chip.addEventListener("click", ()=>{
+      document.querySelectorAll("#category-chips .chip").forEach(c=>c.classList.remove("active"));
+      chip.classList.add("active");
+      categoryFilter = chip.dataset.category;
+      renderBoard();
+    });
+  });
+  document.getElementById("search").addEventListener("input", (e)=>{
+    searchTerm = e.target.value.toLowerCase();
+    renderBoard();
+  });
+
+  function isOverdue(t){
+    if(!t.due || t.status === "done") return false;
+    return new Date(t.due + "T23:59:59") < new Date();
+  }
+
+  function passesFilters(t){
+    if(searchTerm && !t.title.toLowerCase().includes(searchTerm)) return false;
+    if(priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+    if(categoryFilter !== "all" && t.category !== categoryFilter) return false;
+    if(statusFilter === "overdue") return isOverdue(t);
+    if(statusFilter !== "all" && t.status !== statusFilter) return false;
+    return true;
+  }
+
+  function renderBoard(){
+    board.innerHTML = "";
+    const visible = tasks.filter(passesFilters);
+    const columnsToShow = statusFilter === "all" || statusFilter === "overdue"
+      ? STATUSES
+      : STATUSES.filter(s=>s.key === statusFilter);
+    board.style.gridTemplateColumns = "repeat(" + columnsToShow.length + ", 1fr)";
+
+    columnsToShow.forEach(col=>{
+      const colTasks = visible.filter(t=>t.status === col.key)
+        .sort((a,b)=> (b.updated_at||0) - (a.updated_at||0));
+      const colEl = document.createElement("div");
+      colEl.className = "column";
+      colEl.innerHTML = `
+        <div class="column-head">
+          <div class="swatch" style="background:${col.swatch}"></div>
+          <h2>${col.label}</h2>
+          <span class="count">${colTasks.length}</span>
+        </div>
+        <div class="card-stack" data-status="${col.key}"></div>
+      `;
+      board.appendChild(colEl);
+      const stack = colEl.querySelector(".card-stack");
+      if(colTasks.length === 0){
+        stack.innerHTML = `<div class="empty-col">No tasks here yet.</div>`;
+      } else {
+        colTasks.forEach(t=> stack.appendChild(renderCard(t)));
+      }
+    });
+
+    const total = tasks.length;
+    const done = tasks.filter(t=>t.status==="done").length;
+    const overdue = tasks.filter(isOverdue).length;
+    sidebarStats.innerHTML = `<b>${total}</b> total &nbsp;·&nbsp; <b>${done}</b> done<br><b>${overdue}</b> overdue`;
+  }
+
+  function fmtDue(due){
+    if(!due) return null;
+    const d = new Date(due + "T00:00:00");
+    return d.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+  }
+
+  function renderCard(t){
+    const card = document.createElement("div");
+    card.className = "task-card p-" + t.priority;
+    let metaHtml = `<span class="tag ${t.priority}">${t.priority}</span>`;
+    metaHtml += `<span class="tag category">${CATEGORY_LABEL[t.category] || "General"}</span>`;
+    if(t.due){
+      const overdue = isOverdue(t);
+      metaHtml += `<span class="tag ${overdue ? "overdue" : "due"}">${overdue ? "Overdue · " : "Due "}${fmtDue(t.due)}</span>`;
+    }
+    card.innerHTML = `
+      <h3>${escapeHtml(t.title)}</h3>
+      <div class="task-meta">${metaHtml}</div>
+      <div class="card-actions">
+        <select data-id="${t.id}" class="status-select">
+          <option value="todo" ${t.status==="todo"?"selected":""}>To do</option>
+          <option value="in-progress" ${t.status==="in-progress"?"selected":""}>In progress</option>
+          <option value="done" ${t.status==="done"?"selected":""}>Done</option>
+        </select>
+        <button class="icon-btn edit-btn" data-id="${t.id}" title="Edit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="icon-btn danger delete-btn" data-id="${t.id}" title="Delete">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        </button>
+      </div>
+    `;
+
+    card.querySelector(".status-select").addEventListener("change", async (e)=>{
+      const id = Number(e.target.dataset.id);
+      const task = tasks.find(x=>x.id===id);
+      const prevStatus = task.status;
+      task.status = e.target.value;
+      try{
+        const updated = await api("/api/tasks/" + id, {method:"PUT", body: JSON.stringify(task)});
+        Object.assign(task, updated);
+        renderBoard();
+        toast("Moved “" + task.title + "” to " + labelFor(task.status));
+      }catch(err){
+        task.status = prevStatus;
+        renderBoard();
+        toast(err.message);
+      }
+    });
+
+    card.querySelector(".edit-btn").addEventListener("click", ()=> openModal(t.id));
+    card.querySelector(".delete-btn").addEventListener("click", async ()=>{
+      const task = tasks.find(x=>x.id===t.id);
+      if(confirm('Delete "' + task.title + '"? This cannot be undone.')){
+        try{
+          await api("/api/tasks/" + t.id, {method:"DELETE"});
+          tasks = tasks.filter(x=>x.id!==t.id);
+          renderBoard();
+          toast("Task deleted");
+        }catch(err){
+          toast(err.message);
+        }
+      }
+    });
+
+    return card;
+  }
+
+  function labelFor(key){
+    const s = STATUSES.find(s=>s.key===key);
+    return s ? s.label : key;
+  }
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------------- Modal (create / edit) ----------------
+  const overlay = document.getElementById("task-overlay");
+  const modalTitle = document.getElementById("modal-title");
+  const fTitle = document.getElementById("task-title");
+  const fCategory = document.getElementById("task-category");
+  const fPriority = document.getElementById("task-priority");
+  const fStatus = document.getElementById("task-status");
+  const fDue = document.getElementById("task-due");
+
+  function openModal(taskId){
+    editingTaskId = taskId || null;
+    if(taskId){
+      const t = tasks.find(x=>x.id===taskId);
+      modalTitle.textContent = "Edit task";
+      fTitle.value = t.title;
+      fCategory.value = t.category || "general";
+      fPriority.value = t.priority;
+      fStatus.value = t.status;
+      fDue.value = t.due || "";
+    } else {
+      modalTitle.textContent = "New task";
+      fTitle.value = "";
+      fCategory.value = "work";
+      fPriority.value = "medium";
+      fStatus.value = "todo";
+      fDue.value = "";
+    }
+    overlay.classList.add("show");
+    fTitle.focus();
+  }
+  function closeModal(){
+    overlay.classList.remove("show");
+    editingTaskId = null;
+  }
+
+  document.getElementById("new-task-btn").addEventListener("click", ()=>openModal(null));
+  document.getElementById("task-cancel").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeModal(); });
+
+  document.getElementById("task-save").addEventListener("click", async ()=>{
+    const title = fTitle.value.trim();
+    if(!title){ fTitle.focus(); return; }
+    const payload = {
+      title,
+      category: fCategory.value,
+      priority: fPriority.value,
+      status: fStatus.value,
+      due: fDue.value
+    };
+
+    try{
+      if(editingTaskId){
+        const updated = await api("/api/tasks/" + editingTaskId, {method:"PUT", body: JSON.stringify(payload)});
+        const idx = tasks.findIndex(x=>x.id===editingTaskId);
+        tasks[idx] = updated;
+        toast("Task updated");
+      } else {
+        const created = await api("/api/tasks", {method:"POST", body: JSON.stringify(payload)});
+        tasks.unshift(created);
+        toast("Task added");
+      }
+      closeModal();
+      renderBoard();
+    }catch(err){
+      toast(err.message);
+    }
+  });
+
+  document.getElementById("auth-password").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter") authSubmit.click();
+  });
+
+})();
+</script>
+</body>
+</html>
